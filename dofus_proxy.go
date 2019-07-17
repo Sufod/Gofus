@@ -72,9 +72,9 @@ func (proxy *DofusProxy) start() {
 		log.Panic(err)
 	}
 	proxy.serverSocket.init(serverConn) //Initializing server socket conn for game server
-	go proxy.serverSocket.listen()
+	go proxy.serverSocket.listen()      //Starting server listen loop in a goroutine
 
-	err = proxy.listenAndForward()
+	err = proxy.listenAndForward() //Starting proxy blocking loop
 	if err != nil {
 		log.Println(err)
 	}

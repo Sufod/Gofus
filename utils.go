@@ -69,10 +69,11 @@ func (cypher DofusCypher) encodeIp(message string) string {
 
 	obfIp := make([]rune, 8)
 	for i := 0; i < 8; i++ {
+		r := rune(((ip >> uint(4*i)) & 15) + 48)
 		if i%2 == 0 {
-			obfIp[i+1] = rune(((ip >> uint(4*i)) & 15) + 48)
+			obfIp[i+1] = r
 		} else {
-			obfIp[i-1] = rune(((ip >> uint(4*i)) & 15) + 48)
+			obfIp[i-1] = r
 		}
 	}
 
@@ -102,9 +103,9 @@ func NewDofusCypher() *DofusCypher {
 
 func NewBase64() *Base64 {
 	b := &Base64{
-		zkMap: make(map[rune]int),
+		zkMap:   make(map[rune]int),
+		zkArray: [64]rune{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'},
 	}
-	b.zkArray = [64]rune{'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'I', 'J', 'K', 'L', 'M', 'N', 'O', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W', 'X', 'Y', 'Z', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '-', '_'}
 	for index, r := range b.zkArray {
 		b.zkMap[r] = index
 	}
