@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"strconv"
 	"strings"
 )
@@ -18,24 +19,23 @@ type Server struct {
 }
 
 //NewServerList is a function that creates an array of servers from the AH packet
-func NewServerList(packet string) (serverList ServerList) {
+func NewServerList(packet string) (serverList *ServerList, err error) {
 	if strings.HasPrefix(packet, "AH") {
 		serverList.packetID = "AH"
 		servers, err := getServersFromPacket(packet)
 		serverList.servers = servers
 		serverList.serverCount = len(servers)
-		if err != "" {
-			serverList.packetID = err
-			return serverList
+		if err != nil {
+			return nil, err
 		}
 	} else {
-		serverList.packetID = "error"
+		return nil, errors.New("Invalid paquet prefix")
 	}
-	return serverList
+	return serverList, nil
 }
 
 //getServersFromPacket is a function that creates an array of server ID from the AH packet
-func getServersFromPacket(packet string) (servers []Server, err string) {
+func getServersFromPacket(packet string) (servers []Server, err error) {
 	if strings.Contains(packet, "|") && strings.Contains(packet, "AH") {
 		packetContent := strings.TrimPrefix(packet, "AH")   // removes the AH from the packet
 		fullServerData := strings.Split(packetContent, "|") // 601;1;110;0|605;1;110;0|609;1;110;0 -> {601;1;110;0, 605;1;110;0, 609;1;110;0}
@@ -44,16 +44,18 @@ func getServersFromPacket(packet string) (servers []Server, err string) {
 			if len(serversInfo) == 4 {
 				serverID, err := strconv.Atoi(serversInfo[0]) // 601 ...
 				if err != nil {
-					return servers, "server ID Atoi Failed"
+					return nil, errors.New("server ID Atoi Failed")
 				}
 				server := Server{serverID: serverID}
 				servers = append(servers, server)
 			} else { // invalid packet, serverInfo length != 4
-				return servers, "Invalid packet: serverInfo length = " + string(len(serversInfo)) + ", expected = 4"
+				return nil, errors.New("Invalid packet: serverInfo length = " + string(len(serversInfo)) + ", expected = 4")
 			}
 		}
+	} else {
+		return nil, errors.New("Invalid or empty paquet")
 	}
-	return servers, ""
+	return servers, nil
 }
 
 //GetServerNameByID is a function that returns a server name from its ID
