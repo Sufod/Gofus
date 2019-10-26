@@ -34,17 +34,16 @@ func (proxy *DofusProxy) Start() {
 	ln, _ := net.Listen("tcp", "127.0.0.1:8081") //Starting listening on local interface
 	clientConn, _ := ln.Accept()                 //Blocking until a client connect
 	fmt.Println("Client connected")
-
-	proxy.clientSocket.Initialize(clientConn) //Initializing client socket conn
-	go proxy.clientSocket.Listen()            //Starting client listen loop in a goroutine
+	proxy.clientSocket = network.NewDofusSocket(clientConn) //Creating and initializing client socket conn
+	go proxy.clientSocket.Listen()                          //Starting client listen loop in a goroutine
 
 	fmt.Println("Establishing connexion with auth server")
 	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
-	proxy.serverSocket.Initialize(serverConn) //Initializing server socket conn
-	go proxy.serverSocket.Listen()            //Starting server listen loop in a goroutine
+	proxy.serverSocket = network.NewDofusSocket(serverConn) //Creating and initializing server socket conn
+	go proxy.serverSocket.Listen()                          //Starting server listen loop in a goroutine
 
 	fmt.Println("Connected, starting logging packets until game server choice")
 	fmt.Println("=======================================")

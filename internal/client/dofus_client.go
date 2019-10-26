@@ -18,15 +18,15 @@ type DofusClient struct {
 	serverSocket *network.DofusSocket
 }
 
-func (client *DofusClient) start() error {
+func (client *DofusClient) Start() error {
 	fmt.Println("Establishing connexion with server")
 	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
-	client.serverSocket.Initialize(serverConn) //Initializing server socket conn
-	defer client.serverSocket.Close()          //Delaying server socket conn graceful close
-	go client.serverSocket.Listen()            //Starting server listen loop in a goroutine
+	client.serverSocket = network.NewDofusSocket(serverConn) //Creating and Initializing server socket conn
+	defer client.serverSocket.Close()                        //Delaying server socket conn graceful close
+	go client.serverSocket.Listen()                          //Starting server listen loop in a goroutine
 
 	fmt.Println("Connected, starting logging packets")
 	fmt.Println("=======================================")
@@ -34,10 +34,6 @@ func (client *DofusClient) start() error {
 	client.listenAndForward() //Starting proxy blocking loop
 	fmt.Println("stopped client")
 	return nil
-}
-
-func (d *DofusClient) Start() {
-	d.listenAndForward()
 }
 
 //Blocks forever and forward + print received messages from client to server and vice-versa
