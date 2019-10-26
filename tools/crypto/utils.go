@@ -1,11 +1,11 @@
-package main
+package crypto
 
 import (
 	"strconv"
 	"strings"
 )
 
-func cryptPassword(password string, key string) string {
+func EncryptPassword(password string, key string) string {
 	chArray := [...]rune{
 		'a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p',
 		'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z', 'A', 'B', 'C', 'D', 'E', 'F',
@@ -48,7 +48,7 @@ func int2ip(ip int) string {
 	return strconv.Itoa(ip>>24&0xff) + "." + strconv.Itoa(ip>>16&0xff) + "." + strconv.Itoa(ip>>8&0xff) + "." + strconv.Itoa(ip&0xff)
 }
 
-func (cypher DofusCypher) decodeIp(message string) string {
+func (cypher DofusCypher) DecodeIp(message string) string {
 	obfIp := message[0:8]
 	obfPort := message[8:11]
 	ip := 0
@@ -62,7 +62,7 @@ func (cypher DofusCypher) decodeIp(message string) string {
 	return int2ip(ip) + ":" + strconv.Itoa(port)
 }
 
-func (cypher DofusCypher) encodeIp(message string) string {
+func (cypher DofusCypher) EncodeIp(message string) string {
 	parts := strings.Split(message, ":")
 	ip := ip2int(parts[0])
 	port, _ := strconv.Atoi(parts[1])

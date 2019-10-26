@@ -1,4 +1,4 @@
-package main
+package network
 
 import (
 	"bufio"
@@ -8,19 +8,18 @@ import (
 type DofusSocket struct {
 	conn    net.Conn
 	reader  *bufio.Reader
-	channel chan (string)
+	Channel chan (string)
 }
 
-func NewDofusSocket() *DofusSocket {
-	socket := &DofusSocket{
-		channel: make(chan (string), 20),
-	}
+func NewDofusSocket(conn net.Conn) *DofusSocket {
+	socket := &DofusSocket{}
+	socket.Initialize(conn)
 	return socket
 }
 
 //Method to initialize socket conn
-func (socket *DofusSocket) init(conn net.Conn) {
-	socket.channel = make(chan (string), 20)
+func (socket *DofusSocket) Initialize(conn net.Conn) {
+	socket.Channel = make(chan (string), 20)
 	socket.conn = conn
 	if socket.reader == nil {
 		socket.reader = bufio.NewReader(conn)
@@ -29,23 +28,23 @@ func (socket *DofusSocket) init(conn net.Conn) {
 	}
 }
 
-func (socket *DofusSocket) close() {
+func (socket *DofusSocket) Close() {
 	socket.conn.Close()
 }
 
 //Blocks forever and forward received messages from socket to channel
-func (socket *DofusSocket) listen() {
+func (socket *DofusSocket) Listen() {
 	for {
 		message, err := socket.reader.ReadString('\x00')
 		if err != nil {
-			close(socket.channel)
+			close(socket.Channel)
 			return
 		}
-		socket.channel <- message
+		socket.Channel <- message
 	}
 }
 
 //Send a message in socket
-func (socket *DofusSocket) send(message string) {
+func (socket *DofusSocket) Send(message string) {
 	socket.conn.Write(append([]byte(message), '\x00'))
 }
