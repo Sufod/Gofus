@@ -1,4 +1,4 @@
-package main
+package proxy
 
 import (
 	"errors"
@@ -7,45 +7,48 @@ import (
 	"net"
 	"strings"
 	"time"
+
+	"github.com/Sufod/Gofus/internal/network"
+	"github.com/Sufod/Gofus/tools/crypto"
 )
 
 type DofusProxy struct {
-	clientSocket *DofusSocket
-	serverSocket *DofusSocket
+	clientSocket *network.DofusSocket
+	serverSocket *network.DofusSocket
 }
 
 func NewDofusProxy() *DofusProxy {
 	proxy := &DofusProxy{
-		clientSocket: NewDofusSocket(),
-		serverSocket: NewDofusSocket(),
+		// clientSocket: network.NewDofusSocket(),
+		// serverSocket: network.NewDofusSocket(),
 	}
 	return proxy
 }
 
-func (proxy *DofusProxy) start() {
+func (proxy *DofusProxy) Start() {
 	fmt.Println("Waiting for client to be connected")
 	ln, _ := net.Listen("tcp", "127.0.0.1:8081") //Starting listening on local interface
 	clientConn, _ := ln.Accept()                 //Blocking until a client connect
 	fmt.Println("Client connected")
 
-	proxy.clientSocket.init(clientConn) //Initializing client socket conn
-	go proxy.clientSocket.listen()      //Starting client listen loop in a goroutine
+	proxy.clientSocket.Initialize(clientConn) //Initializing client socket conn
+	go proxy.clientSocket.Listen()            //Starting client listen loop in a goroutine
 
 	fmt.Println("Establishing connexion with auth server")
 	serverConn, err := net.Dial("tcp", "34.251.172.139:443") // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
-	proxy.serverSocket.init(serverConn) //Initializing server socket conn
-	go proxy.serverSocket.listen()      //Starting server listen loop in a goroutine
+	proxy.serverSocket.Initialize(serverConn) //Initializing server socket conn
+	go proxy.serverSocket.Listen()            //Starting server listen loop in a goroutine
 
 	fmt.Println("Connected, starting logging packets until game server choice")
 	fmt.Println("=======================================")
 
 	authMessage, err := proxy.listenAndForwardAuthSequence() //Starting proxy blocking loop
 	if err != nil {
-		proxy.clientSocket.close()
-		proxy.serverSocket.close()
+		proxy.clientSocket.Close()
+		proxy.serverSocket.Close()
 		log.Panicln(err)
 	}
 
@@ -53,33 +56,33 @@ func (proxy *DofusProxy) start() {
 	fmt.Println("Handling connexion to game server")
 	ticket := authMessage[11:]
 	encodedIp := authMessage[:11]
-	cypher := NewDofusCypher()
-	ip := cypher.decodeIp(encodedIp)
-	proxy.serverSocket.close()
+	cypher := crypto.NewDofusCypher()
+	ip := cypher.DecodeIp(encodedIp)
+	proxy.serverSocket.Close()
 	fmt.Println("Waiting for client to be connected again")
 	go func() {
 		clientConn, _ = ln.Accept() //Blocking until a client connect
 		fmt.Println("Client connected")
-		proxy.clientSocket.init(clientConn) //Initializing client socket conn
-		proxy.clientSocket.listen()         //Starting client listen
+		proxy.clientSocket.Initialize(clientConn) //Initializing client socket conn
+		proxy.clientSocket.Listen()               //Starting client listen
 	}()
 
-	proxy.clientSocket.send("AXK" + cypher.encodeIp("127.0.0.1:8081") + ticket)
+	proxy.clientSocket.Send("AXK" + cypher.EncodeIp("127.0.0.1:8081") + ticket)
 	time.Sleep(1 * time.Second)
 	fmt.Println("Establishing connexion with game server " + ip)
 	serverConn, err = net.Dial("tcp", ip) // Connecting to game server
 	if err != nil {
 		log.Panic(err)
 	}
-	proxy.serverSocket.init(serverConn) //Initializing server socket conn for game server
-	go proxy.serverSocket.listen()      //Starting server listen loop in a goroutine
+	proxy.serverSocket.Initialize(serverConn) //Initializing server socket conn for game server
+	go proxy.serverSocket.Listen()            //Starting server listen loop in a goroutine
 
 	err = proxy.listenAndForward() //Starting proxy blocking loop
 	if err != nil {
 		log.Println(err)
 	}
-	proxy.serverSocket.close()
-	proxy.clientSocket.close()
+	proxy.serverSocket.Close()
+	proxy.clientSocket.Close()
 	fmt.Println("stopped proxy")
 }
 
@@ -88,18 +91,18 @@ func (proxy *DofusProxy) start() {
 func (proxy *DofusProxy) listenAndForward() error {
 	for {
 		select {
-		case message, ok := <-proxy.clientSocket.channel:
+		case message, ok := <-proxy.clientSocket.Channel:
 			fmt.Println("Message from client: " + message)
 			if ok == false || message == "" {
 				return errors.New("Client closed connection, stopping...")
 			}
-			proxy.serverSocket.send(message)
-		case message, ok := <-proxy.serverSocket.channel:
+			proxy.serverSocket.Send(message)
+		case message, ok := <-proxy.serverSocket.Channel:
 			fmt.Println("Message from server: " + message)
 			if ok == false || message == "" {
 				return errors.New("Server closed connection, stopping...")
 			}
-			proxy.clientSocket.send(message)
+			proxy.clientSocket.Send(message)
 		}
 	}
 }
@@ -109,13 +112,13 @@ func (proxy *DofusProxy) listenAndForward() error {
 func (proxy *DofusProxy) listenAndForwardAuthSequence() (string, error) {
 	for {
 		select {
-		case message, ok := <-proxy.clientSocket.channel:
+		case message, ok := <-proxy.clientSocket.Channel:
 			if ok == false || message == "" {
 				return "", errors.New("Client closed connection, stopping...")
 			}
 			fmt.Println("Message from client: " + message)
-			proxy.serverSocket.send(message)
-		case message, ok := <-proxy.serverSocket.channel:
+			proxy.serverSocket.Send(message)
+		case message, ok := <-proxy.serverSocket.Channel:
 			if ok == false || message == "" {
 				return "", errors.New("Server closed connection, stopping...")
 			}
@@ -123,7 +126,7 @@ func (proxy *DofusProxy) listenAndForwardAuthSequence() (string, error) {
 			if strings.HasPrefix(message, "AXK") {
 				return message[3:], nil
 			}
-			proxy.clientSocket.send(message)
+			proxy.clientSocket.Send(message)
 		}
 	}
 }
