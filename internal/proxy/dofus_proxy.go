@@ -8,9 +8,13 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Sufod/Gofus/configs"
+
 	"github.com/Sufod/Gofus/internal/network"
 	"github.com/Sufod/Gofus/tools/crypto"
 )
+
+var cfg configs.ConfigHolder = configs.Config()
 
 type DofusProxy struct {
 	clientSocket *network.DofusSocket
@@ -35,7 +39,7 @@ func (proxy *DofusProxy) Start() {
 	go proxy.clientSocket.Listen()            //Starting client listen loop in a goroutine
 
 	fmt.Println("Establishing connexion with auth server")
-	serverConn, err := net.Dial("tcp", "34.251.172.139:443") // Connecting to auth servers
+	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}

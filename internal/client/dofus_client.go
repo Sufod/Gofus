@@ -1,31 +1,26 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/Sufod/Gofus/configs"
 	"github.com/Sufod/Gofus/internal/network"
 	"github.com/Sufod/Gofus/tools/crypto"
 )
+
+var cfg configs.ConfigHolder = configs.Config()
 
 type DofusClient struct {
 	serverSocket *network.DofusSocket
 }
 
 func (client *DofusClient) start() error {
-	if os.Getenv("DOFUS_ACCOUNT") == "" {
-		return errors.New("Please setup environment variable DOFUS_ACCOUNT with your account name")
-	}
-	if os.Getenv("DOFUS_PASSWORD") == "" {
-		return errors.New("Please setup environment variable DOFUS_PASSWORD with your account password")
-	}
 	fmt.Println("Establishing connexion with server")
-	serverConn, err := net.Dial("tcp", "34.251.172.139:443") // Connecting to auth servers
+	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
@@ -61,8 +56,8 @@ func (client *DofusClient) listenAndForward() {
 			case strings.HasPrefix(message, "HC"):
 				client.serverSocket.Send("1.29.1")
 				key := message[2:]
-				cryptedPassword := crypto.EncryptPassword(os.Getenv("DOFUS_PASSWORD"), key)
-				client.serverSocket.Send(os.Getenv("DOFUS_ACCOUNT") + "\n" + cryptedPassword)
+				cryptedPassword := crypto.EncryptPassword(cfg.Credentials.Password, key)
+				client.serverSocket.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
 				client.serverSocket.Send("Af")
 			case strings.HasPrefix(message, "AQ"):
 				client.serverSocket.Send("Ax")

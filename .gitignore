@@ -1,2 +1,4 @@
 cmd/client/client
 cmd/proxy/proxy
+cmd/client/config.yml
+cmd/proxy/config.yml
