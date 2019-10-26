@@ -30,7 +30,11 @@ func TestNewServerList(t *testing.T) {
 	assert.NilError(t, err)
 	assert.Equal(t, len(serverList.servers), 11)
 
-	serverList.servers, err = getServersFromPacket(emptypacket)
-	assert.Equal(t, len(serverList.servers), 0)
+	serverList, err = NewServerList(emptypacket)
+	assert.Assert(t, serverList == nil)
+	assert.Assert(t, err != nil)
+
+	serverList, err = NewServerList("")
+	assert.Assert(t, serverList == nil)
 	assert.Assert(t, err != nil)
 }
