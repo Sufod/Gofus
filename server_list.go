@@ -18,9 +18,10 @@ type Server struct {
 	serverID int
 }
 
-//NewServerList is a function that creates an array of servers from the AH packet
+//NewServerList is a function that creates a ServerList struct containing an array of servers from the AH packet
 func NewServerList(packet string) (serverList *ServerList, err error) {
 	if strings.HasPrefix(packet, "AH") {
+		serverList = new(ServerList)
 		serverList.packetID = "AH"
 		servers, err := getServersFromPacket(packet)
 		serverList.servers = servers
