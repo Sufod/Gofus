@@ -1,37 +1,32 @@
 package client
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 
+	"github.com/Sufod/Gofus/configs"
 	"github.com/Sufod/Gofus/internal/network"
 	"github.com/Sufod/Gofus/tools/crypto"
 )
+
+var cfg configs.ConfigHolder = configs.Config()
 
 type DofusClient struct {
 	serverSocket *network.DofusSocket
 }
 
-func (client *DofusClient) start() error {
-	if os.Getenv("DOFUS_ACCOUNT") == "" {
-		return errors.New("Please setup environment variable DOFUS_ACCOUNT with your account name")
-	}
-	if os.Getenv("DOFUS_PASSWORD") == "" {
-		return errors.New("Please setup environment variable DOFUS_PASSWORD with your account password")
-	}
+func (client *DofusClient) Start() error {
 	fmt.Println("Establishing connexion with server")
-	serverConn, err := net.Dial("tcp", "34.251.172.139:443") // Connecting to auth servers
+	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
-	client.serverSocket.Initialize(serverConn) //Initializing server socket conn
-	defer client.serverSocket.Close()          //Delaying server socket conn graceful close
-	go client.serverSocket.Listen()            //Starting server listen loop in a goroutine
+	client.serverSocket = network.NewDofusSocket(serverConn) //Creating and Initializing server socket conn
+	defer client.serverSocket.Close()                        //Delaying server socket conn graceful close
+	go client.serverSocket.Listen()                          //Starting server listen loop in a goroutine
 
 	fmt.Println("Connected, starting logging packets")
 	fmt.Println("=======================================")
@@ -39,10 +34,6 @@ func (client *DofusClient) start() error {
 	client.listenAndForward() //Starting proxy blocking loop
 	fmt.Println("stopped client")
 	return nil
-}
-
-func (d *DofusClient) Start() {
-	d.listenAndForward()
 }
 
 //Blocks forever and forward + print received messages from client to server and vice-versa
@@ -61,8 +52,8 @@ func (client *DofusClient) listenAndForward() {
 			case strings.HasPrefix(message, "HC"):
 				client.serverSocket.Send("1.29.1")
 				key := message[2:]
-				cryptedPassword := crypto.EncryptPassword(os.Getenv("DOFUS_PASSWORD"), key)
-				client.serverSocket.Send(os.Getenv("DOFUS_ACCOUNT") + "\n" + cryptedPassword)
+				cryptedPassword := crypto.EncryptPassword(cfg.Credentials.Password, key)
+				client.serverSocket.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
 				client.serverSocket.Send("Af")
 			case strings.HasPrefix(message, "AQ"):
 				client.serverSocket.Send("Ax")

@@ -1,0 +1,9 @@
+# This is an example config.yml file
+# Please do not modify this example, it is used in config_holder_test.go
+
+DOFUS_AUTH_SERVER: "34.251.172.139:443"
+DOFUS_SERVER_NAME: "Eratz"
+DOFUS_VERSION: "1.29.1"
+credentials:
+  DOFUS_USERNAME: "myDofusAccountName"
+  DOFUS_PASSWORD: "myDofusAccountPassword"
