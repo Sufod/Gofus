@@ -1,0 +1,9 @@
+# This is config.yml file to be used with the client binary or main method
+# You can modify this file to specify your informations, modifications will not be pushed to the repository
+
+DOFUS_AUTH_SERVER: "34.251.172.139:443"
+DOFUS_SERVER_NAME: "Eratz"
+DOFUS_VERSION: "1.29.1"
+credentials:
+  DOFUS_USERNAME: "myDofusAccountName"
+  DOFUS_PASSWORD: "myDofusAccountPassword"
