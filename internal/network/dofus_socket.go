@@ -2,6 +2,7 @@ package network
 
 import (
 	"bufio"
+	"fmt"
 	"net"
 )
 
@@ -17,7 +18,7 @@ func NewDofusSocket(conn net.Conn) *DofusSocket {
 	return socket
 }
 
-//Method to initialize socket conn
+//Initialize is a Method to initialize socket conn
 func (socket *DofusSocket) Initialize(conn net.Conn) {
 	socket.Channel = make(chan (string), 20)
 	socket.conn = conn
@@ -32,7 +33,7 @@ func (socket *DofusSocket) Close() {
 	socket.conn.Close()
 }
 
-//Blocks forever and forward received messages from socket to channel
+//Listen Blocks forever and forward received messages from socket to channel
 func (socket *DofusSocket) Listen() {
 	for {
 		message, err := socket.reader.ReadString('\x00')
@@ -40,11 +41,13 @@ func (socket *DofusSocket) Listen() {
 			close(socket.Channel)
 			return
 		}
+
 		socket.Channel <- message
 	}
 }
 
 //Send a message in socket
 func (socket *DofusSocket) Send(message string) {
+	fmt.Println("[SENT] - " + message)
 	socket.conn.Write(append([]byte(message), '\x00'))
 }

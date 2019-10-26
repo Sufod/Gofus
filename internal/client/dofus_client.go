@@ -4,20 +4,21 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/Sufod/Gofus/configs"
+	"github.com/Sufod/Gofus/internal/client/phases"
 	"github.com/Sufod/Gofus/internal/network"
-	"github.com/Sufod/Gofus/tools/crypto"
 )
 
 var cfg configs.ConfigHolder = configs.Config()
 
+//DofusClient is a struct that will contain the communication between the client and the server
 type DofusClient struct {
 	serverSocket *network.DofusSocket
 }
 
+//Start is a function to init connection to the authServer with a DofusCLient
 func (client *DofusClient) Start() error {
 	fmt.Println("Establishing connexion with server")
 	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
@@ -36,33 +37,28 @@ func (client *DofusClient) Start() error {
 	return nil
 }
 
+//PhaseName is an enum of the differents phases
+type PhaseName int
+
+const (
+	//AUTH is the authphase
+	AUTH PhaseName = iota
+	//ANOTHER is an exemple phase
+	ANOTHER
+)
+
 //Blocks forever and forward + print received messages from client to server and vice-versa
 //Gracefully close if client disconnect
 func (client *DofusClient) listenAndForward() {
+
+	phasesHandlers := make(map[PhaseName]phases.PhaseInterface)
+	phasesHandlers[AUTH] = phases.NewAuthPhase()
+	//currentPhase := AUTH
 	for {
-		select {
-		case message, ok := <-client.serverSocket.Channel:
-			if ok == false || message == "" {
-				fmt.Println("Server closed connection, stopping...")
-				return
-			}
-			fmt.Println("Message from Server: " + message)
-			time.Sleep(100)
-			switch {
-			case strings.HasPrefix(message, "HC"):
-				client.serverSocket.Send("1.29.1")
-				key := message[2:]
-				cryptedPassword := crypto.EncryptPassword(cfg.Credentials.Password, key)
-				client.serverSocket.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
-				client.serverSocket.Send("Af")
-			case strings.HasPrefix(message, "AQ"):
-				client.serverSocket.Send("Ax")
-			case strings.HasPrefix(message, "AH"):
-				client.serverSocket.Send("AX602")
-			case strings.HasPrefix(message, "AXK"):
-				// ticket := message[14:]
-				// ip := decodeIp(message[3:])
-			}
-		}
+		phasesHandlers[AUTH].HandlePackets(client.serverSocket) // Appel bloquant
+
+		// Executé a la fin de [Auth] HandlePackets
+		fmt.Println("Ending auth phase")
+		time.Sleep(100)
 	}
 }
