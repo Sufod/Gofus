@@ -9,8 +9,8 @@ import (
 //ServerList is a struct that will contain an array of all available game servers and functions like get server name by id
 type ServerList struct {
 	packetID    string
-	servers     []Server
-	serverCount int
+	Servers     []Server
+	ServerCount int
 }
 
 //Server is a struct that will be used to define a server in the list of game servers
@@ -24,8 +24,8 @@ func NewServerList(packet string) (serverList *ServerList, err error) {
 	if strings.HasPrefix(packet, "AH") {
 		serverList.packetID = "AH"
 		servers, err := getServersFromPacket(packet)
-		serverList.servers = servers
-		serverList.serverCount = len(servers)
+		serverList.Servers = servers
+		serverList.ServerCount = len(servers)
 		if err != nil {
 			return nil, err
 		}
@@ -90,4 +90,47 @@ func GetServerNameByID(id int) (serverName string) {
 		serverName = "Unknown"
 	}
 	return serverName
+}
+
+//GetServerIDByName is a function that returns a server ID from its name
+func GetServerIDByName(name string) (serverID int) {
+	switch name { // Source -> https://cadernis.fr/index.php?threads/aide-trouver-les-id-serveur-retro-dofus.2351/
+	case "Eratz":
+		serverID = 601
+	case "Henual":
+		serverID = 602
+	case "Nabur":
+		serverID = 603
+	case "Arty":
+		serverID = 604
+	case "Algathe":
+		serverID = 605
+	case "Hogmeiser":
+		serverID = 606
+	case "Droupik":
+		serverID = 607
+	case "Ayuto":
+		serverID = 608
+	case "Bilby":
+		serverID = 609
+	case "Clustus":
+		serverID = 610
+	case "Issering":
+		serverID = 611
+	case "Boune":
+		serverID = 612
+	default:
+		serverID = 0
+	}
+	return
+}
+
+//ServerExists checks if the choosen server exists in the serverlist
+func ServerExists(serverList *ServerList, serverName string) int {
+	for index := 0; index < serverList.ServerCount; index++ {
+		if serverList.Servers[index].serverID == GetServerIDByName(serverName) {
+			return 1
+		}
+	}
+	return 0
 }

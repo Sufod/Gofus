@@ -60,5 +60,6 @@ func (client *DofusClient) listenAndForward() {
 		// Executé a la fin de [Auth] HandlePackets
 		fmt.Println("Ending auth phase")
 		time.Sleep(100)
+		break
 	}
 }

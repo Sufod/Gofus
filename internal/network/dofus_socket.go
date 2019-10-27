@@ -2,7 +2,6 @@ package network
 
 import (
 	"bufio"
-	"fmt"
 	"net"
 )
 
@@ -48,6 +47,7 @@ func (socket *DofusSocket) Listen() {
 
 //Send a message in socket
 func (socket *DofusSocket) Send(message string) {
-	fmt.Println("[SENT] - " + message)
-	socket.conn.Write(append([]byte(message), '\x00'))
+	//fmt.Println("[SENT] - " + message)
+	socket.conn.Write(append([]byte(message), '\n', '\x00'))
+	//time.Sleep(100 * time.Millisecond)
 }

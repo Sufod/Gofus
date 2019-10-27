@@ -2,6 +2,7 @@ package decoders
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 	"strings"
 )
@@ -12,7 +13,7 @@ type Queue struct {
 	currentPos     int
 	totalSub       int
 	totalNotSubbed int
-	isSub          bool
+	IsSub          bool
 }
 
 //NewQueue creates a Queue struct to follow the position of the player in the queue
@@ -42,9 +43,10 @@ func (q *Queue) UpdateQueuePosition(packet string) (err error) {
 				return errors.New("queue Atoi Failed")
 			}
 			if len(packetInfo[3]) == 0 {
-				q.isSub = false
+				q.IsSub = false
+				fmt.Println("[WARN] - Un compte non abonné ne peux pas jouer sur Dofus retro")
 			} else {
-				q.isSub = true
+				q.IsSub = true
 			}
 		} else { // invalid packet, serverInfo length != 4
 			return errors.New("Invalid packet: queue packetContent length = " + string(len(packetInfo)) + ", expected = 5")
@@ -56,6 +58,6 @@ func (q *Queue) UpdateQueuePosition(packet string) (err error) {
 }
 
 //LogQueuePosition returns a ready to log string containing the player position in the queue
-func (q *Queue) LogQueuePosition() string {
-	return ("Position dans la file d'attente : " + string(q.currentPos) + "/" + string(q.totalSub))
+func (q *Queue) LogQueuePosition() {
+	fmt.Println("Position dans la file d'attente : " + strconv.Itoa(q.currentPos) + "/" + strconv.Itoa(q.totalSub))
 }

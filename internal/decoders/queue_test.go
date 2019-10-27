@@ -38,11 +38,3 @@ func TestUpdateQueuePosition(t *testing.T) {
 	err = queue.UpdateQueuePosition(emptypacket)
 	assert.Assert(t, queue == nil)
 }
-
-func TestLogQueuePosition(t *testing.T) {
-	regularpacket := "Af2|3|0||-1"
-
-	queue, err := NewQueue(regularpacket)
-	assert.NilError(t, err)
-	assert.Assert(t, queue.LogQueuePosition() == "Position dans la file d'attente : "+string(2)+"/"+string(3))
-}
