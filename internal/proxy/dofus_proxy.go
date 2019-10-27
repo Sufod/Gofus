@@ -99,13 +99,13 @@ func (proxy *DofusProxy) listenAndForward() error {
 			if ok == false || message == "" {
 				return errors.New("Client closed connection, stopping...")
 			}
-			proxy.serverSocket.Send(message)
+			proxy.serverSocket.Send(strings.TrimSuffix(message, "\n"))
 		case message, ok := <-proxy.serverSocket.Channel:
 			fmt.Println("Message from server: " + message)
 			if ok == false || message == "" {
 				return errors.New("Server closed connection, stopping...")
 			}
-			proxy.clientSocket.Send(message)
+			proxy.clientSocket.Send(strings.TrimSuffix(message, "\n"))
 		}
 	}
 }
@@ -120,7 +120,7 @@ func (proxy *DofusProxy) listenAndForwardAuthSequence() (string, error) {
 				return "", errors.New("Client closed connection, stopping...")
 			}
 			fmt.Println("Message from client: " + message)
-			proxy.serverSocket.Send(message)
+			proxy.serverSocket.Send(strings.TrimSuffix(message, "\n"))
 		case message, ok := <-proxy.serverSocket.Channel:
 			if ok == false || message == "" {
 				return "", errors.New("Server closed connection, stopping...")
@@ -129,7 +129,7 @@ func (proxy *DofusProxy) listenAndForwardAuthSequence() (string, error) {
 			if strings.HasPrefix(message, "AXK") {
 				return message[3:], nil
 			}
-			proxy.clientSocket.Send(message)
+			proxy.clientSocket.Send(strings.TrimSuffix(message, "\n"))
 		}
 	}
 }
