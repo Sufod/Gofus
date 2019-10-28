@@ -54,7 +54,7 @@ Follow the same procedure as for the client, don't forget to add a config.yml in
 ./proxy
 ```
 
-After launching the proxy, you can use the official client and play normally, the proxy is logging every paquets between client and server.
+After launching the proxy, you can use the official client and play normally, the proxy is logging every packets between client and server.
 
 ## License
 [MIT](https://choosealicense.com/licenses/mit/)
