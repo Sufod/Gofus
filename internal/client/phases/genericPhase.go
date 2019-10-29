@@ -6,8 +6,9 @@ import (
 
 //GenericPhase is a struct containing all the common points of phases
 type GenericPhase struct {
+	*network.DofusSocket
 	startingPackedID string
 	endingPacketID   string
-	onStartAction    func(message string, socket *network.DofusSocket)
-	onEndAction      func(message string, socket *network.DofusSocket)
+	onStartAction    func(message string)
+	onEndAction      func(message string)
 }

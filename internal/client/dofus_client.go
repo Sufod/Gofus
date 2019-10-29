@@ -52,10 +52,10 @@ const (
 func (client *DofusClient) listenAndForward() {
 
 	phasesHandlers := make(map[PhaseName]phases.PhaseInterface)
-	phasesHandlers[AUTH] = phases.NewAuthPhase()
+	phasesHandlers[AUTH] = phases.NewAuthPhase(client.serverSocket)
 	//currentPhase := AUTH
 	for {
-		phasesHandlers[AUTH].HandlePackets(client.serverSocket) // Appel bloquant
+		phasesHandlers[AUTH].HandlePackets() // Appel bloquant
 
 		// Executé a la fin de [Auth] HandlePackets
 		fmt.Println("Ending auth phase")

@@ -27,6 +27,17 @@ func NewQueue(packet string) (q *Queue, err error) {
 	return nil, errors.New("Invalid paquet prefix / content")
 }
 
+//HandleQueue directly handles the af packet
+func HandleQueue(packet string) *Queue {
+	queue, err := NewQueue(packet)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		queue.LogQueuePosition()
+	}
+	return queue
+}
+
 //UpdateQueuePosition updates an existing queue to get current player queue position
 func (q *Queue) UpdateQueuePosition(packet string) (err error) {
 	if q == nil || q.packetID != "Af" {
@@ -44,7 +55,6 @@ func (q *Queue) UpdateQueuePosition(packet string) (err error) {
 			}
 			if len(packetInfo[3]) == 0 {
 				q.IsSub = false
-				fmt.Println("[WARN] - Un compte non abonné ne peux pas jouer sur Dofus retro")
 			} else {
 				q.IsSub = true
 			}

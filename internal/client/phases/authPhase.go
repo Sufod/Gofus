@@ -2,9 +2,7 @@ package phases
 
 import (
 	"fmt"
-	"strconv"
 	"strings"
-	"time"
 
 	"github.com/Sufod/Gofus/configs"
 	"github.com/Sufod/Gofus/internal/decoders"
@@ -19,78 +17,73 @@ type AuthPhase struct {
 	GenericPhase
 }
 
-//AuthSendAuthentication sends the username, encryptedpass and version to the server
-func AuthSendAuthentication(message string, socket *network.DofusSocket) {
-	socket.Send(cfg.DofusVersion)
+//NewAuthPhase Initialize the AuthPhase's
+func NewAuthPhase(socket *network.DofusSocket) PhaseInterface {
+	authPhase := &AuthPhase{
+		GenericPhase: GenericPhase{
+			DofusSocket:      socket,
+			startingPackedID: "HC",
+			endingPacketID:   "AXK",
+		},
+	}
+
+	return authPhase
+}
+
+//SendAuthentication sends the username, encryptedpass and version to the server
+func (authPhase *AuthPhase) SendAuthentication(message string) {
+	authPhase.Send(cfg.DofusVersion)
 	key := message[2:]
 	cryptedPassword := crypto.EncryptPassword(cfg.Credentials.Password, key)
-	socket.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
-	socket.Send("Af")
+	authPhase.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
+	authPhase.Send("Af")
 }
 
-//AuthConnectToGameServer disconnects from the authserver to finally connect to the gameServer and init GamePhase
-func AuthConnectToGameServer(message string, socket *network.DofusSocket) {
+//ConnectToGameServer disconnects from the authserver to finally connect to the gameServer and init GamePhase
+func (authPhase *AuthPhase) ConnectToGameServer(message string) {
 
-}
-
-//HandleQueue directly handles the af packet
-func HandleQueue(packet string) *decoders.Queue {
-	queue, err := decoders.NewQueue(packet)
-	if err != nil {
-		fmt.Println(err)
-	} else {
-		queue.LogQueuePosition()
-	}
-	return queue
 }
 
 //HandleServerList directly handles the serverlist from the packet and anwser to it
-func HandleServerList(packet string, socket *network.DofusSocket, step int) {
-	if step == 1 {
-		serverList, err := decoders.NewServerList(packet)
-		if err != nil {
-			fmt.Println(err)
-		} else {
-			if serverList.ServerCount > 0 && decoders.ServerExists(serverList, cfg.DofusServerName) == 1 {
-				socket.Send("Ax")
-			} else {
-				fmt.Println("[AUTHPHASE] [ERR] - Serveur " + cfg.DofusServerName + " indisponible / non existant")
-			}
-		}
-	}
-	if step == 2 {
-		if decoders.GetServerIDByName(cfg.DofusServerName) != 0 {
-			fmt.Println("Serveur choisis : " + cfg.DofusServerName)
-			socket.Send("Ax" + strconv.Itoa(decoders.GetServerIDByName(cfg.DofusServerName)))
+func (authPhase *AuthPhase) HandleServerList(packet string) {
+	serverList, err := decoders.NewServerList(packet)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		if serverList.ServerCount > 0 && decoders.ServerExists(serverList, cfg.DofusServerName) == 1 {
+			authPhase.Send("Ax")
 		} else {
 			fmt.Println("[AUTHPHASE] [ERR] - Serveur " + cfg.DofusServerName + " indisponible / non existant")
 		}
 	}
+
 }
 
 //HandlePackets handles packets for the auth phase
-func (phase *AuthPhase) HandlePackets(socket *network.DofusSocket) {
-	// TODO
-	// Handle auth pĥase
-	serverListStep := 1
+func (authPhase *AuthPhase) HandlePackets() {
+	fmt.Println("========= ENTERING AUTH PHASE =========")
 	for {
 		select {
-		case message, ok := <-socket.Channel:
+		case message, ok := <-authPhase.DofusSocket.Channel:
 			if ok == false || message == "" {
 				fmt.Println("Server closed connection, stopping...")
 				return
 			}
-			time.Sleep(100)
+			//	fmt.Println("[AUTHPHASE] [RCV] - " + message)
 			switch {
 
-			case strings.HasPrefix(message, phase.startingPackedID):
-				phase.onStartAction(message, socket)
-			case strings.HasPrefix(message, phase.endingPacketID):
-				phase.onEndAction(message, socket)
+			case strings.HasPrefix(message, authPhase.startingPackedID):
+				authPhase.SendAuthentication(message)
+				//message, ok := <-authPhase.DofusSocket.Channel
+				//Ici on s'attends a recevoir un paquet particulier
+				// On peut aussi deleguer le travail a un sous-handler si necessaire
+
+			case strings.HasPrefix(message, authPhase.endingPacketID):
+				authPhase.ConnectToGameServer(message)
 			case strings.HasPrefix(message, "Af"):
-				if HandleQueue(message).IsSub == false {
+				if decoders.HandleQueue(message).IsSub == false {
 					fmt.Println("[AUTHPHASE] [ERR] - Un compte non abonné ne peux pas jouer sur Dofus retro")
-					break
+					return
 				}
 			case strings.HasPrefix(message, "Ad"):
 				fmt.Println("Connecté a " + strings.TrimPrefix(message, "Ad"))
@@ -100,13 +93,10 @@ func (phase *AuthPhase) HandlePackets(socket *network.DofusSocket) {
 				//Empty packet
 			case strings.HasPrefix(message, "AQ"):
 				//Empty packet
-			case strings.HasPrefix(message, "AH") || strings.HasPrefix(message, "AxK"):
-				if serverListStep <= 2 {
-					HandleServerList(message, socket, serverListStep)
-				} else {
-					break
-				}
-				serverListStep++
+			case strings.HasPrefix(message, "AH"):
+				authPhase.HandleServerList(message)
+			case strings.HasPrefix(message, "AxK"):
+				decoders.SelectServer(message, authPhase.DofusSocket)
 			default:
 				fmt.Println("[AUTHPHASE] [RCV] - " + message)
 				fmt.Println("[AUTHPHASE] [ERR] - Cant handle packet")
@@ -114,22 +104,4 @@ func (phase *AuthPhase) HandlePackets(socket *network.DofusSocket) {
 			}
 		}
 	}
-}
-
-//NewAuthPhase Initialize the AuthPhase's
-func NewAuthPhase() PhaseInterface {
-	fmt.Println("========= ENTERING AUTH PHASE =========")
-	authPhase := &AuthPhase{
-		GenericPhase: GenericPhase{},
-	}
-	authPhase.initAuthPhase()
-	return authPhase
-}
-
-func (authPhase *AuthPhase) initAuthPhase() {
-	authPhase.startingPackedID = "HC"
-	authPhase.endingPacketID = "AXK"
-	authPhase.onStartAction = AuthSendAuthentication
-	authPhase.onEndAction = AuthConnectToGameServer
-	//authPhase.packetHandler = phases.AuthHandlePacket
 }
