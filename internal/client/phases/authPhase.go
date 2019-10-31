@@ -10,21 +10,21 @@ import (
 	"github.com/Sufod/Gofus/tools/crypto"
 )
 
-var cfg configs.ConfigHolder = configs.Config()
-
 //AuthPhase is the phase where the user logins and choose its game server / character
 type AuthPhase struct {
 	GenericPhase
+	cfg configs.ConfigHolder
 }
 
 //NewAuthPhase Initialize the AuthPhase's
-func NewAuthPhase(socket *network.DofusSocket) PhaseInterface {
+func NewAuthPhase(socket *network.DofusSocket, cfg configs.ConfigHolder) PhaseInterface {
 	authPhase := &AuthPhase{
 		GenericPhase: GenericPhase{
 			DofusSocket:      socket,
 			startingPackedID: "HC",
 			endingPacketID:   "AXK",
 		},
+		cfg: cfg,
 	}
 
 	return authPhase
@@ -32,10 +32,10 @@ func NewAuthPhase(socket *network.DofusSocket) PhaseInterface {
 
 //SendAuthentication sends the username, encryptedpass and version to the server
 func (authPhase *AuthPhase) SendAuthentication(message string) {
-	authPhase.Send(cfg.DofusVersion)
+	authPhase.Send(authPhase.cfg.DofusVersion)
 	key := message[2:]
-	cryptedPassword := crypto.EncryptPassword(cfg.Credentials.Password, key)
-	authPhase.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
+	cryptedPassword := crypto.EncryptPassword(authPhase.cfg.Credentials.Password, key)
+	authPhase.Send(authPhase.cfg.Credentials.Username + "\n" + cryptedPassword)
 	authPhase.Send("Af")
 }
 
@@ -50,10 +50,10 @@ func (authPhase *AuthPhase) HandleServerList(packet string) {
 	if err != nil {
 		fmt.Println(err)
 	} else {
-		if serverList.ServerCount > 0 && decoders.ServerExists(serverList, cfg.DofusServerName) == 1 {
+		if serverList.ServerCount > 0 && decoders.ServerExists(serverList, authPhase.cfg.DofusServerName) == 1 {
 			authPhase.Send("Ax")
 		} else {
-			fmt.Println("[AUTHPHASE] [ERR] - Serveur " + cfg.DofusServerName + " indisponible / non existant")
+			fmt.Println("[AUTHPHASE] [ERR] - Serveur " + authPhase.cfg.DofusServerName + " indisponible / non existant")
 		}
 	}
 
@@ -96,7 +96,7 @@ func (authPhase *AuthPhase) HandlePackets() {
 			case strings.HasPrefix(message, "AH"):
 				authPhase.HandleServerList(message)
 			case strings.HasPrefix(message, "AxK"):
-				decoders.SelectServer(message, authPhase.DofusSocket)
+				decoders.SelectServer(message, authPhase.DofusSocket, authPhase.cfg.DofusServerName)
 			default:
 				fmt.Println("[AUTHPHASE] [RCV] - " + message)
 				fmt.Println("[AUTHPHASE] [ERR] - Cant handle packet")

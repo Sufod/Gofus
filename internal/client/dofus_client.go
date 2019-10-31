@@ -11,17 +11,23 @@ import (
 	"github.com/Sufod/Gofus/internal/network"
 )
 
-var cfg configs.ConfigHolder = configs.Config()
-
 //DofusClient is a struct that will contain the communication between the client and the server
-type DofusClient struct {
+type dofusClient struct {
 	serverSocket *network.DofusSocket
+	cfg          configs.ConfigHolder
+}
+
+func NewDofusClient(cfg configs.ConfigHolder) *dofusClient {
+	proxy := &dofusClient{
+		cfg: cfg,
+	}
+	return proxy
 }
 
 //Start is a function to init connection to the authServer with a DofusCLient
-func (client *DofusClient) Start() error {
+func (client *dofusClient) Start() error {
 	fmt.Println("Establishing connexion with server")
-	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
+	serverConn, err := net.Dial("tcp", client.cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
@@ -49,10 +55,10 @@ const (
 
 //Blocks forever and forward + print received messages from client to server and vice-versa
 //Gracefully close if client disconnect
-func (client *DofusClient) listenAndForward() {
+func (client *dofusClient) listenAndForward() {
 
 	phasesHandlers := make(map[PhaseName]phases.PhaseInterface)
-	phasesHandlers[AUTH] = phases.NewAuthPhase(client.serverSocket)
+	phasesHandlers[AUTH] = phases.NewAuthPhase(client.serverSocket, client.cfg)
 	//currentPhase := AUTH
 	for {
 		phasesHandlers[AUTH].HandlePackets() // Appel bloquant

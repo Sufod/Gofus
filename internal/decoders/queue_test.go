@@ -31,7 +31,7 @@ func TestUpdateQueuePosition(t *testing.T) {
 	err = queue.UpdateQueuePosition(regularpacket)
 	assert.Assert(t, queue.currentPos == 2)
 	assert.Assert(t, queue.totalSub == 3)
-	assert.Assert(t, !queue.isSub)
+	assert.Assert(t, !queue.IsSub)
 
 	queue, err = NewQueue(emptypacket)
 	assert.Assert(t, err != nil)

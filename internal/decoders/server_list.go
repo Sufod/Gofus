@@ -6,11 +6,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Sufod/Gofus/configs"
 	"github.com/Sufod/Gofus/internal/network"
 )
-
-var cfg configs.ConfigHolder = configs.Config()
 
 //ServerList is a struct that will contain an array of all available game servers and functions like get server name by id
 type ServerList struct {
@@ -42,20 +39,20 @@ func NewServerList(packet string) (serverList *ServerList, err error) {
 }
 
 //SelectServer sends the packet to select the game server
-func SelectServer(packet string, socket *network.DofusSocket) {
+func SelectServer(packet string, socket *network.DofusSocket, gameServerName string) {
 	//First checks if has characters on the selected server
 	splittedPacket := strings.Split(packet, "|")
 	hasCharacters := false
 	//Checks if the selected server exists
-	if GetServerIDByName(cfg.DofusServerName) == 0 {
-		fmt.Println("[AUTHPHASE] [ERR] - Serveur " + cfg.DofusServerName + " indisponible / non existant")
+	if GetServerIDByName(gameServerName) == 0 {
+		fmt.Println("[AUTHPHASE] [ERR] - Serveur " + gameServerName + " indisponible / non existant")
 		return
 	}
 	for index := 1; index < len(splittedPacket)-1; index++ {
 		server := splittedPacket[index]
 		serverInfos := strings.Split(server, ",")
 		characterCount, err := strconv.ParseInt(serverInfos[1], 10, 0)
-		if string(serverInfos[0]) == strconv.Itoa(GetServerIDByName(cfg.DofusServerName)) && characterCount != 0 {
+		if string(serverInfos[0]) == strconv.Itoa(GetServerIDByName(gameServerName)) && characterCount != 0 {
 			hasCharacters = true
 		}
 		if err != nil {
@@ -65,11 +62,11 @@ func SelectServer(packet string, socket *network.DofusSocket) {
 	fmt.Println(hasCharacters)
 
 	if hasCharacters == true {
-		fmt.Println("Serveur choisis : " + cfg.DofusServerName)
-		socket.Send("Ax" + strconv.Itoa(GetServerIDByName(cfg.DofusServerName)))
+		fmt.Println("Serveur choisis : " + gameServerName)
+		socket.Send("Ax" + strconv.Itoa(GetServerIDByName(gameServerName)))
 		return
 	}
-	fmt.Println("[AUTHPHASE] [ERR] - Vous n'avez pas de personnage sur le serveur " + cfg.DofusServerName)
+	fmt.Println("[AUTHPHASE] [ERR] - Vous n'avez pas de personnage sur le serveur " + gameServerName)
 	return
 }
 
