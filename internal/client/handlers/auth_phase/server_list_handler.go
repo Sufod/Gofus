@@ -1,4 +1,4 @@
-package decoders
+package handlers
 
 import (
 	"errors"
@@ -9,8 +9,23 @@ import (
 	"github.com/Sufod/Gofus/internal/network"
 )
 
-//ServerList is a struct that will contain an array of all available game servers and functions like get server name by id
-type ServerList struct {
+type serverHandler struct {
+	*network.DofusSocket
+	serverList         serverList
+	selectedServerName string
+}
+
+func NewServerHandler(socket *network.DofusSocket, selectedServerName string) serverHandler {
+	serverHandler := serverHandler{
+		DofusSocket:        socket,
+		selectedServerName: selectedServerName,
+	}
+
+	return serverHandler
+}
+
+//serverList is a struct that will contain an array of all available game servers and functions like get server name by id
+type serverList struct {
 	packetID    string
 	Servers     []Server
 	ServerCount int
@@ -21,38 +36,66 @@ type Server struct {
 	serverID int
 }
 
-//NewServerList is a function that creates a ServerList struct containing an array of servers from the AH packet
-func NewServerList(packet string) (serverList *ServerList, err error) {
-	serverList = new(ServerList)
+//newServerList is a function that creates a serverList struct containing an array of servers from the AH packet
+func newServerList(packet string) (*serverList, error) {
+	//serverList = new(serverList)
 	if strings.HasPrefix(packet, "AH") {
-		serverList.packetID = "AH"
+		serverList := serverList{
+			packetID: "AH",
+		}
 		servers, err := getServersFromPacket(packet)
-		serverList.Servers = servers
-		serverList.ServerCount = len(servers)
 		if err != nil {
 			return nil, err
 		}
+		serverList.Servers = servers
+		serverList.ServerCount = len(servers)
+		return &serverList, nil
 	} else {
 		return nil, errors.New("Invalid paquet prefix")
 	}
-	return serverList, nil
+}
+
+//HandleServerList directly handles the serverlist from the packet and anwser to it
+func (serverHandler serverHandler) HandleServerList() {
+	packet, err := serverHandler.WaitForPacket()
+	if err != nil {
+		//TODO better error handling
+		fmt.Println(err)
+	}
+	serverList, err := newServerList(packet)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		if serverList.ServerCount > 0 && serverExists(serverList, serverHandler.selectedServerName) == 1 {
+			serverHandler.Send("Ax")
+		} else {
+			fmt.Println("[AUTHPHASE] [ERR] - Serveur " + serverHandler.selectedServerName + " indisponible / non existant")
+		}
+	}
+
 }
 
 //SelectServer sends the packet to select the game server
-func SelectServer(packet string, socket *network.DofusSocket, gameServerName string) {
+func (serverHandler serverHandler) SelectServer() {
+	packet, err := serverHandler.WaitForPacket()
+	if err != nil {
+		//TODO better error handling
+		fmt.Println(err)
+	}
+	//TODO Check for AxK packet
 	//First checks if has characters on the selected server
 	splittedPacket := strings.Split(packet, "|")
 	hasCharacters := false
 	//Checks if the selected server exists
-	if GetServerIDByName(gameServerName) == 0 {
-		fmt.Println("[AUTHPHASE] [ERR] - Serveur " + gameServerName + " indisponible / non existant")
+	if GetServerIDByName(serverHandler.selectedServerName) == 0 {
+		fmt.Println("[AUTHPHASE] [ERR] - Serveur " + serverHandler.selectedServerName + " indisponible / non existant")
 		return
 	}
 	for index := 1; index < len(splittedPacket)-1; index++ {
 		server := splittedPacket[index]
 		serverInfos := strings.Split(server, ",")
 		characterCount, err := strconv.ParseInt(serverInfos[1], 10, 0)
-		if string(serverInfos[0]) == strconv.Itoa(GetServerIDByName(gameServerName)) && characterCount != 0 {
+		if string(serverInfos[0]) == strconv.Itoa(GetServerIDByName(serverHandler.selectedServerName)) && characterCount != 0 {
 			hasCharacters = true
 		}
 		if err != nil {
@@ -62,11 +105,11 @@ func SelectServer(packet string, socket *network.DofusSocket, gameServerName str
 	fmt.Println(hasCharacters)
 
 	if hasCharacters == true {
-		fmt.Println("Serveur choisis : " + gameServerName)
-		socket.Send("Ax" + strconv.Itoa(GetServerIDByName(gameServerName)))
+		fmt.Println("Serveur choisis : " + serverHandler.selectedServerName)
+		serverHandler.Send("Ax" + strconv.Itoa(GetServerIDByName(serverHandler.selectedServerName)))
 		return
 	}
-	fmt.Println("[AUTHPHASE] [ERR] - Vous n'avez pas de personnage sur le serveur " + gameServerName)
+	fmt.Println("[AUTHPHASE] [ERR] - Vous n'avez pas de personnage sur le serveur " + serverHandler.selectedServerName)
 	return
 }
 
@@ -94,8 +137,8 @@ func getServersFromPacket(packet string) (servers []Server, err error) {
 	return servers, nil
 }
 
-//ServerExists checks if the choosen server exists in the serverlist
-func ServerExists(serverList *ServerList, serverName string) int {
+//serverExists checks if the choosen server exists in the serverlist
+func serverExists(serverList *serverList, serverName string) int {
 	for index := 0; index < serverList.ServerCount; index++ {
 		if serverList.Servers[index].serverID == GetServerIDByName(serverName) {
 			return 1

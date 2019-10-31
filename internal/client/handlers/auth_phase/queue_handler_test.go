@@ -1,4 +1,4 @@
-package decoders
+package handlers
 
 import (
 	"testing"

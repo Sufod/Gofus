@@ -1,4 +1,4 @@
-package decoders
+package handlers
 
 import (
 	"testing"
@@ -7,7 +7,7 @@ import (
 )
 
 func TestGetServersFromPacket(t *testing.T) {
-	var serverList ServerList
+	var serverList serverList
 	var err error
 
 	regularpacket := "AH601;1;110;0|605;1;110;0|609;1;110;0|604;1;110;0|608;1;110;0|603;1;110;0|607;1;110;0|611;1;110;0|602;1;110;0|606;1;110;0|610;1;110;0"
@@ -26,15 +26,15 @@ func TestNewServerList(t *testing.T) {
 	regularpacket := "AH601;1;110;0|605;1;110;0|609;1;110;0|604;1;110;0|608;1;110;0|603;1;110;0|607;1;110;0|611;1;110;0|602;1;110;0|606;1;110;0|610;1;110;0"
 	emptypacket := "AH"
 
-	serverList, err := NewServerList(regularpacket)
+	serverList, err := newServerList(regularpacket)
 	assert.NilError(t, err)
 	assert.Equal(t, len(serverList.Servers), 11)
 
-	serverList, err = NewServerList(emptypacket)
+	serverList, err = newServerList(emptypacket)
 	assert.Assert(t, serverList == nil)
 	assert.Assert(t, err != nil)
 
-	serverList, err = NewServerList("")
+	serverList, err = newServerList("")
 	assert.Assert(t, serverList == nil)
 	assert.Assert(t, err != nil)
 }

@@ -2,6 +2,7 @@ package network
 
 import (
 	"bufio"
+	"errors"
 	"net"
 )
 
@@ -50,4 +51,13 @@ func (socket *DofusSocket) Send(message string) {
 	//	fmt.Println("[SENT] - " + message)
 	socket.conn.Write(append([]byte(message), '\n', '\x00'))
 	//time.Sleep(100 * time.Millisecond)
+}
+
+//WaitForPacket blocks until a message is available to read in the channel
+func (socket *DofusSocket) WaitForPacket() (string, error) {
+	message, ok := <-socket.Channel
+	if ok == false || message == "" {
+		return "", errors.New("Remote host closed connection")
+	}
+	return message, nil
 }
