@@ -10,14 +10,14 @@ import (
 )
 
 type serverHandler struct {
-	*network.DofusSocket
+	*network.HandlerSocket
 	serverList         serverList
 	selectedServerName string
 }
 
-func NewServerHandler(socket *network.DofusSocket, selectedServerName string) serverHandler {
+func newServerHandler(socket *network.HandlerSocket, selectedServerName string) serverHandler {
 	serverHandler := serverHandler{
-		DofusSocket:        socket,
+		HandlerSocket:      socket,
 		selectedServerName: selectedServerName,
 	}
 
@@ -56,7 +56,7 @@ func newServerList(packet string) (*serverList, error) {
 }
 
 //HandleServerList directly handles the serverlist from the packet and anwser to it
-func (serverHandler serverHandler) HandleServerList() {
+func (serverHandler serverHandler) handleServerList() {
 	packet, err := serverHandler.WaitForPacket()
 	if err != nil {
 		//TODO better error handling
@@ -76,7 +76,7 @@ func (serverHandler serverHandler) HandleServerList() {
 }
 
 //SelectServer sends the packet to select the game server
-func (serverHandler serverHandler) SelectServer() {
+func (serverHandler serverHandler) selectServer() {
 	packet, err := serverHandler.WaitForPacket()
 	if err != nil {
 		//TODO better error handling
@@ -87,7 +87,7 @@ func (serverHandler serverHandler) SelectServer() {
 	splittedPacket := strings.Split(packet, "|")
 	hasCharacters := false
 	//Checks if the selected server exists
-	if GetServerIDByName(serverHandler.selectedServerName) == 0 {
+	if getServerIdByName(serverHandler.selectedServerName) == 0 {
 		fmt.Println("[AUTHPHASE] [ERR] - Serveur " + serverHandler.selectedServerName + " indisponible / non existant")
 		return
 	}
@@ -95,7 +95,7 @@ func (serverHandler serverHandler) SelectServer() {
 		server := splittedPacket[index]
 		serverInfos := strings.Split(server, ",")
 		characterCount, err := strconv.ParseInt(serverInfos[1], 10, 0)
-		if string(serverInfos[0]) == strconv.Itoa(GetServerIDByName(serverHandler.selectedServerName)) && characterCount != 0 {
+		if string(serverInfos[0]) == strconv.Itoa(getServerIdByName(serverHandler.selectedServerName)) && characterCount != 0 {
 			hasCharacters = true
 		}
 		if err != nil {
@@ -106,7 +106,7 @@ func (serverHandler serverHandler) SelectServer() {
 
 	if hasCharacters == true {
 		fmt.Println("Serveur choisis : " + serverHandler.selectedServerName)
-		serverHandler.Send("Ax" + strconv.Itoa(GetServerIDByName(serverHandler.selectedServerName)))
+		serverHandler.Send("Ax" + strconv.Itoa(getServerIdByName(serverHandler.selectedServerName)))
 		return
 	}
 	fmt.Println("[AUTHPHASE] [ERR] - Vous n'avez pas de personnage sur le serveur " + serverHandler.selectedServerName)
@@ -140,15 +140,15 @@ func getServersFromPacket(packet string) (servers []Server, err error) {
 //serverExists checks if the choosen server exists in the serverlist
 func serverExists(serverList *serverList, serverName string) int {
 	for index := 0; index < serverList.ServerCount; index++ {
-		if serverList.Servers[index].serverID == GetServerIDByName(serverName) {
+		if serverList.Servers[index].serverID == getServerIdByName(serverName) {
 			return 1
 		}
 	}
 	return 0
 }
 
-//GetServerNameByID is a function that returns a server name from its ID
-func GetServerNameByID(id int) (serverName string) {
+//getServerNameById is a function that returns a server name from its ID
+func getServerNameById(id int) (serverName string) {
 	switch id { // Source -> https://cadernis.fr/index.php?threads/aide-trouver-les-id-serveur-retro-dofus.2351/
 	case 601:
 		serverName = "Eratz"
@@ -182,8 +182,8 @@ func GetServerNameByID(id int) (serverName string) {
 	return serverName
 }
 
-//GetServerIDByName is a function that returns a server ID from its name
-func GetServerIDByName(name string) (serverID int) {
+//getServerIdByName is a function that returns a server ID from its name
+func getServerIdByName(name string) (serverID int) {
 	switch name { // Source -> https://cadernis.fr/index.php?threads/aide-trouver-les-id-serveur-retro-dofus.2351/
 	case "Eratz":
 		serverID = 601

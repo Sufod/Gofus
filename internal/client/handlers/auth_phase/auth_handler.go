@@ -10,7 +10,7 @@ import (
 
 //authHandler is the phase where the user logins and choose its game server / character
 type authHandler struct {
-	*network.DofusSocket
+	*network.HandlerSocket
 	cfg configs.ConfigHolder
 	serverHandler
 }
@@ -18,16 +18,16 @@ type authHandler struct {
 //NewAuthHandler Instantiate and initialize a new authHandler
 func NewAuthHandler(socket *network.DofusSocket, cfg configs.ConfigHolder) authHandler {
 	authHandler := authHandler{
-		DofusSocket:   socket,
+		HandlerSocket: network.NewHandlerSocket(socket),
 		cfg:           cfg,
-		serverHandler: NewServerHandler(socket, cfg.DofusServerName),
 	}
+	authHandler.serverHandler = newServerHandler(authHandler.HandlerSocket, cfg.DofusServerName)
 
 	return authHandler
 }
 
 //HandleAuthentication sends the username, encryptedpass and version to the server
-func (authHandler authHandler) HandleAuthentication() {
+func (authHandler authHandler) handleAuthentication() {
 	packet, err := authHandler.WaitForPacket()
 	if err != nil {
 		//TODO better error handling
@@ -42,7 +42,7 @@ func (authHandler authHandler) HandleAuthentication() {
 }
 
 //ConnectToGameServer disconnects from the authserver to finally connect to the gameServer and init GamePhase
-func (authHandler authHandler) ConnectToGameServer() {
+func (authHandler authHandler) connectToGameServer() {
 	packet, err := authHandler.WaitForPacket()
 	if err != nil {
 		//TODO better error handling
@@ -53,7 +53,7 @@ func (authHandler authHandler) ConnectToGameServer() {
 }
 
 //ConnectToGameServer disconnects from the authserver to finally connect to the gameServer and init GamePhase
-func (authHandler authHandler) HandleEmptyPacket() {
+func (authHandler authHandler) handleEmptyPacket() {
 	packet, err := authHandler.WaitForPacket()
 	if err != nil {
 		//TODO better error handling
@@ -66,16 +66,16 @@ func (authHandler authHandler) HandleEmptyPacket() {
 //Handle handles packets for the auth phase
 func (authHandler authHandler) Handle() {
 	fmt.Println("========= ENTERING AUTH PHASE =========")
-	authHandler.HandleAuthentication()
+	authHandler.handleAuthentication()
 
-	authHandler.HandleServerList()
+	authHandler.handleServerList()
 
 	//TODO: placer au bons endroits
 	//authHandler.HandleEmptyPacket()
 
-	authHandler.SelectServer()
+	authHandler.selectServer()
 
-	authHandler.ConnectToGameServer()
+	authHandler.connectToGameServer()
 
 	// for {
 	// 	select {
