@@ -49,34 +49,20 @@ func (authHandler authHandler) handleAuthenticationResult() bool {
 		fmt.Println(err)
 	}
 	isConnected := strings.HasPrefix(packet, "Af")
+
 	if isConnected == false {
-		if strings.HasPrefix(packet, "AlEf") {
-			fmt.Println("[AUTHPHASE] [ERR] - Nom de compte ou mot de passe incorrect !")
+		mapping := map[string]string{
+			"AlEf": "[AUTHPHASE] [ERR] - Nom de compte ou mot de passe incorrect !",
+			"AlEb": "[AUTHPHASE] [ERR] - Ce compte est banni !",
+			"AlEn": "[AUTHPHASE] [ERR] - La connexion a été interrompue !",
+			"AlEa": "[AUTHPHASE] [ERR] - Compte déjà en cours de connexion !",
+			"AlEc": "[AUTHPHASE] [ERR] - Ce compte est déjà connecté a un serveur de jeu",
+			"AlEv": "[AUTHPHASE] [ERR] - Nouvelle version ! (" + strings.TrimPrefix(packet, "AlEv") + ")",
+			"AlEp": "[AUTHPHASE] [ERR] - Compte invalide !",
+			"AlEk": "[AUTHPHASE] [ERR] - Ce compte est banni temporairement",
+			"AlEm": "[AUTHPHASE] [ERR] - Compte en maintenance !",
 		}
-		if strings.HasPrefix(packet, "AlEb") {
-			fmt.Println("[AUTHPHASE] [ERR] - Ce compte est banni !")
-		}
-		if strings.HasPrefix(packet, "AlEn") {
-			fmt.Println("[AUTHPHASE] [ERR] - La connexion a été interrompue !")
-		}
-		if strings.HasPrefix(packet, "AlEa") {
-			fmt.Println("[AUTHPHASE] [ERR] - Compte déjà en cour de connexion !")
-		}
-		if strings.HasPrefix(packet, "AlEc") {
-			fmt.Println("[AUTHPHASE] [ERR] - Ce compte est déjà connecté a un serveur de jeu")
-		}
-		if strings.HasPrefix(packet, "AlEv") {
-			fmt.Println("[AUTHPHASE] [ERR] - Nouvelle version ! (" + strings.TrimPrefix(packet, "AlEv") + ")")
-		}
-		if strings.HasPrefix(packet, "AlEp") {
-			fmt.Println("[AUTHPHASE] [ERR] - Compte invalide !")
-		}
-		if strings.HasPrefix(packet, "AlEk") {
-			fmt.Println("[AUTHPHASE] [ERR] - Ce compte est banni temporairement")
-		}
-		if strings.HasPrefix(packet, "AlEn") {
-			fmt.Println("[AUTHPHASE] [ERR] - Compte en maintenance !")
-		}
+		fmt.Println(mapping[packet[:4]])
 	}
 	return isConnected
 }
