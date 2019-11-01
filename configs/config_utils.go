@@ -2,6 +2,7 @@ package configs
 
 import (
 	"fmt"
+	"log"
 	"os"
 
 	"github.com/kelseyhightower/envconfig"
@@ -26,7 +27,7 @@ func readFile(cfg interface{}) {
 	}
 
 	if err != nil {
-		processError(err)
+		log.Panicln("Couldn't find configuration file")
 	}
 
 	decoder := yaml.NewDecoder(f)

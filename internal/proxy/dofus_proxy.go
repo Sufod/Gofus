@@ -8,41 +8,37 @@ import (
 	"strings"
 	"time"
 
-	"github.com/Sufod/Gofus/configs"
-
 	"github.com/Sufod/Gofus/internal/network"
 	"github.com/Sufod/Gofus/tools/crypto"
 )
 
-var cfg configs.ConfigHolder = configs.Config()
-
-type DofusProxy struct {
-	clientSocket *network.DofusSocket
-	serverSocket *network.DofusSocket
+type dofusProxy struct {
+	clientSocket *network.ProxySocket
+	serverSocket *network.ProxySocket
+	authServerIp string
 }
 
-func NewDofusProxy() *DofusProxy {
-	proxy := &DofusProxy{
-		// clientSocket: network.NewDofusSocket(),
-		// serverSocket: network.NewDofusSocket(),
+func NewDofusProxy(authServerIp string) *dofusProxy {
+	proxy := &dofusProxy{
+		authServerIp: authServerIp,
 	}
 	return proxy
 }
 
-func (proxy *DofusProxy) Start() {
+func (proxy *dofusProxy) Start() {
 	fmt.Println("Waiting for client to be connected")
 	ln, _ := net.Listen("tcp", "127.0.0.1:8081") //Starting listening on local interface
 	clientConn, _ := ln.Accept()                 //Blocking until a client connect
 	fmt.Println("Client connected")
-	proxy.clientSocket = network.NewDofusSocket(clientConn) //Creating and initializing client socket conn
+	proxy.clientSocket = network.NewProxySocket(clientConn) //Creating and initializing client socket conn
 	go proxy.clientSocket.Listen()                          //Starting client listen loop in a goroutine
 
 	fmt.Println("Establishing connexion with auth server")
-	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
+	serverConn, err := net.Dial("tcp", proxy.authServerIp) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
-	proxy.serverSocket = network.NewDofusSocket(serverConn) //Creating and initializing server socket conn
+	proxy.serverSocket = network.NewProxySocket(serverConn) //Creating and initializing server socket conn
 	go proxy.serverSocket.Listen()                          //Starting server listen loop in a goroutine
 
 	fmt.Println("Connected, starting logging packets until game server choice")
@@ -91,7 +87,7 @@ func (proxy *DofusProxy) Start() {
 
 //Blocks forever and forward + print received messages from client to server and vice-versa
 //Gracefully close if client disconnect
-func (proxy *DofusProxy) listenAndForward() error {
+func (proxy *dofusProxy) listenAndForward() error {
 	for {
 		select {
 		case message, ok := <-proxy.clientSocket.Channel:
@@ -112,7 +108,7 @@ func (proxy *DofusProxy) listenAndForward() error {
 
 //Blocks forever and forward + print received messages from client to server and vice-versa
 //Gracefully close if client disconnect
-func (proxy *DofusProxy) listenAndForwardAuthSequence() (string, error) {
+func (proxy *dofusProxy) listenAndForwardAuthSequence() (string, error) {
 	for {
 		select {
 		case message, ok := <-proxy.clientSocket.Channel:

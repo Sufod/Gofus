@@ -4,23 +4,29 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"strings"
-	"time"
 
 	"github.com/Sufod/Gofus/configs"
+	auth_phase "github.com/Sufod/Gofus/internal/client/handlers/auth_phase"
 	"github.com/Sufod/Gofus/internal/network"
-	"github.com/Sufod/Gofus/tools/crypto"
 )
 
-var cfg configs.ConfigHolder = configs.Config()
-
-type DofusClient struct {
+//DofusClient is a struct that will contain the communication between the client and the server
+type dofusClient struct {
 	serverSocket *network.DofusSocket
+	cfg          configs.ConfigHolder
 }
 
-func (client *DofusClient) Start() error {
+func NewDofusClient(cfg configs.ConfigHolder) *dofusClient {
+	proxy := &dofusClient{
+		cfg: cfg,
+	}
+	return proxy
+}
+
+//Start is a function to init connection to the authServer with a DofusCLient
+func (client *dofusClient) Start() error {
 	fmt.Println("Establishing connexion with server")
-	serverConn, err := net.Dial("tcp", cfg.DofusAuthServer) // Connecting to auth servers
+	serverConn, err := net.Dial("tcp", client.cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
 	}
@@ -31,38 +37,14 @@ func (client *DofusClient) Start() error {
 	fmt.Println("Connected, starting logging packets")
 	fmt.Println("=======================================")
 
-	client.listenAndForward() //Starting proxy blocking loop
+	client.handle() //Starting main loop
 	fmt.Println("stopped client")
 	return nil
 }
 
-//Blocks forever and forward + print received messages from client to server and vice-versa
-//Gracefully close if client disconnect
-func (client *DofusClient) listenAndForward() {
-	for {
-		select {
-		case message, ok := <-client.serverSocket.Channel:
-			if ok == false || message == "" {
-				fmt.Println("Server closed connection, stopping...")
-				return
-			}
-			fmt.Println("Message from Server: " + message)
-			time.Sleep(100)
-			switch {
-			case strings.HasPrefix(message, "HC"):
-				client.serverSocket.Send("1.29.1")
-				key := message[2:]
-				cryptedPassword := crypto.EncryptPassword(cfg.Credentials.Password, key)
-				client.serverSocket.Send(cfg.Credentials.Username + "\n" + cryptedPassword)
-				client.serverSocket.Send("Af")
-			case strings.HasPrefix(message, "AQ"):
-				client.serverSocket.Send("Ax")
-			case strings.HasPrefix(message, "AH"):
-				client.serverSocket.Send("AX602")
-			case strings.HasPrefix(message, "AXK"):
-				// ticket := message[14:]
-				// ip := decodeIp(message[3:])
-			}
-		}
-	}
+//handle is the main method for client, is in charge of the orchestration of the different handlers
+//This method shouldn't stop until the end of the program
+func (client *dofusClient) handle() {
+	auth_phase.NewAuthHandler(client.serverSocket, client.cfg).Handle()
+	fmt.Println("Ending auth phase")
 }
