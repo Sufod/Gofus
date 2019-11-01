@@ -100,6 +100,21 @@ func (authHandler authHandler) handleUsername() {
 	fmt.Println("Connecté à " + strings.TrimPrefix(packet, "Ad"))
 }
 
+//HandleQueue directly handles the af packet
+func (authHandler authHandler) handleQueue() *Queue {
+	packet, err := authHandler.WaitForPacket()
+	if err != nil {
+		fmt.Println(err)
+	}
+	queue, err := NewQueue(packet)
+	if err != nil {
+		fmt.Println(err)
+	} else {
+		queue.LogQueuePosition()
+	}
+	return queue
+}
+
 //Handle handles packets for the auth phase
 func (authHandler authHandler) Handle() {
 	fmt.Println("========= ENTERING AUTH PHASE =========")
