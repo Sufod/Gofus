@@ -19,9 +19,7 @@ type DofusServerEmulator struct {
 func (emulator *DofusServerEmulator) Start(t *testing.T) {
 	fmt.Println("Waiting for client to be connected")
 	ln, _ := net.Listen("tcp", "127.0.0.1:8081") //Starting listening on local interface
-
-	go emulator.startClient()
-	clientConn, _ := ln.Accept() //Blocking until a client connect
+	clientConn, _ := ln.Accept()                 //Blocking until a client connect
 	fmt.Println("Client connected")
 	emulator.DofusSocket = network.NewDofusSocket(clientConn) //Creating and initializing client socket conn
 	go emulator.Listen()
