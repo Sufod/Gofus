@@ -13,8 +13,8 @@ import (
 )
 
 type dofusProxy struct {
-	clientSocket *network.DofusSocket
-	serverSocket *network.DofusSocket
+	clientSocket *network.ProxySocket
+	serverSocket *network.ProxySocket
 	authServerIp string
 }
 
@@ -30,7 +30,7 @@ func (proxy *dofusProxy) Start() {
 	ln, _ := net.Listen("tcp", "127.0.0.1:8081") //Starting listening on local interface
 	clientConn, _ := ln.Accept()                 //Blocking until a client connect
 	fmt.Println("Client connected")
-	proxy.clientSocket = network.NewDofusSocket(clientConn) //Creating and initializing client socket conn
+	proxy.clientSocket = network.NewProxySocket(clientConn) //Creating and initializing client socket conn
 	go proxy.clientSocket.Listen()                          //Starting client listen loop in a goroutine
 
 	fmt.Println("Establishing connexion with auth server")
@@ -38,7 +38,7 @@ func (proxy *dofusProxy) Start() {
 	if err != nil {
 		log.Panic(err)
 	}
-	proxy.serverSocket = network.NewDofusSocket(serverConn) //Creating and initializing server socket conn
+	proxy.serverSocket = network.NewProxySocket(serverConn) //Creating and initializing server socket conn
 	go proxy.serverSocket.Listen()                          //Starting server listen loop in a goroutine
 
 	fmt.Println("Connected, starting logging packets until game server choice")
@@ -95,13 +95,13 @@ func (proxy *dofusProxy) listenAndForward() error {
 			if ok == false || message == "" {
 				return errors.New("Client closed connection, stopping...")
 			}
-			proxy.serverSocket.Send(strings.TrimSuffix(message, "\n"))
+			proxy.serverSocket.Send(message)
 		case message, ok := <-proxy.serverSocket.Channel:
 			fmt.Println("Message from server: " + message)
 			if ok == false || message == "" {
 				return errors.New("Server closed connection, stopping...")
 			}
-			proxy.clientSocket.Send(strings.TrimSuffix(message, "\n"))
+			proxy.clientSocket.Send(message)
 		}
 	}
 }
@@ -116,7 +116,7 @@ func (proxy *dofusProxy) listenAndForwardAuthSequence() (string, error) {
 				return "", errors.New("Client closed connection, stopping...")
 			}
 			fmt.Println("Message from client: " + message)
-			proxy.serverSocket.Send(strings.TrimSuffix(message, "\n"))
+			proxy.serverSocket.Send(message)
 		case message, ok := <-proxy.serverSocket.Channel:
 			if ok == false || message == "" {
 				return "", errors.New("Server closed connection, stopping...")
@@ -125,7 +125,7 @@ func (proxy *dofusProxy) listenAndForwardAuthSequence() (string, error) {
 			if strings.HasPrefix(message, "AXK") {
 				return message[3:], nil
 			}
-			proxy.clientSocket.Send(strings.TrimSuffix(message, "\n"))
+			proxy.clientSocket.Send(message)
 		}
 	}
 }
