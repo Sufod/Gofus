@@ -77,7 +77,8 @@ func (serverHandler serverHandler) handleServerList() {
 
 //SelectServer sends the packet to select the game server
 func (serverHandler serverHandler) selectServer() {
-	packet, err := serverHandler.WaitForPacket()
+	serverHandler.Send("Ax")
+	packet, err := serverHandler.WaitForPacket() //AxK
 	if err != nil {
 		//TODO better error handling
 		fmt.Println(err)

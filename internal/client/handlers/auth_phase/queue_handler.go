@@ -28,7 +28,11 @@ func NewQueue(packet string) (q *Queue, err error) {
 }
 
 //HandleQueue directly handles the af packet
-func HandleQueue(packet string) *Queue {
+func (authHandler authHandler) handleQueue() *Queue {
+	packet, err := authHandler.WaitForPacket()
+	if err != nil {
+		fmt.Println(err)
+	}
 	queue, err := NewQueue(packet)
 	if err != nil {
 		fmt.Println(err)

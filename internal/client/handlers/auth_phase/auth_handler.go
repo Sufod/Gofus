@@ -2,6 +2,7 @@ package handlers
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/Sufod/Gofus/configs"
 	"github.com/Sufod/Gofus/internal/network"
@@ -41,6 +42,45 @@ func (authHandler authHandler) handleAuthentication() {
 	authHandler.Send("Af")
 }
 
+func (authHandler authHandler) handleAuthenticationResult() bool {
+	packet, err := authHandler.WaitForPacket()
+	if err != nil {
+		//TODO better error handling
+		fmt.Println(err)
+	}
+	isConnected := strings.HasPrefix(packet, "Af")
+	if isConnected == false {
+		if strings.HasPrefix(packet, "AlEf") {
+			fmt.Println("[AUTHPHASE] [ERR] - Nom de compte ou mot de passe incorrect !")
+		}
+		if strings.HasPrefix(packet, "AlEb") {
+			fmt.Println("[AUTHPHASE] [ERR] - Ce compte est banni !")
+		}
+		if strings.HasPrefix(packet, "AlEn") {
+			fmt.Println("[AUTHPHASE] [ERR] - La connexion a été interrompue !")
+		}
+		if strings.HasPrefix(packet, "AlEa") {
+			fmt.Println("[AUTHPHASE] [ERR] - Compte déjà en cour de connexion !")
+		}
+		if strings.HasPrefix(packet, "AlEc") {
+			fmt.Println("[AUTHPHASE] [ERR] - Ce compte est déjà connecté a un serveur de jeu")
+		}
+		if strings.HasPrefix(packet, "AlEv") {
+			fmt.Println("[AUTHPHASE] [ERR] - Nouvelle version ! (" + strings.TrimPrefix(packet, "AlEv") + ")")
+		}
+		if strings.HasPrefix(packet, "AlEp") {
+			fmt.Println("[AUTHPHASE] [ERR] - Compte invalide !")
+		}
+		if strings.HasPrefix(packet, "AlEk") {
+			fmt.Println("[AUTHPHASE] [ERR] - Ce compte est banni temporairement")
+		}
+		if strings.HasPrefix(packet, "AlEn") {
+			fmt.Println("[AUTHPHASE] [ERR] - Compte en maintenance !")
+		}
+	}
+	return isConnected
+}
+
 //ConnectToGameServer disconnects from the authserver to finally connect to the gameServer and init GamePhase
 func (authHandler authHandler) connectToGameServer() {
 	packet, err := authHandler.WaitForPacket()
@@ -59,64 +99,45 @@ func (authHandler authHandler) handleEmptyPacket() {
 		//TODO better error handling
 		fmt.Println(err)
 	}
-	fmt.Println(packet)
+	if len(packet) > 0 {
+		return
+	}
 	//TODO Check for XXX packet
+}
+
+func (authHandler authHandler) handleUsername() {
+	packet, err := authHandler.WaitForPacket()
+	if err != nil {
+		//TODO better error handling
+		fmt.Println(err)
+	}
+	fmt.Println("Connecté à " + strings.TrimPrefix(packet, "Ad"))
 }
 
 //Handle handles packets for the auth phase
 func (authHandler authHandler) Handle() {
 	fmt.Println("========= ENTERING AUTH PHASE =========")
-	authHandler.handleAuthentication()
+	authHandler.handleAuthentication() //HC + key
 
-	authHandler.handleServerList()
+	authHandler.handleQueue() // Af + pos | total | useless data
 
-	//TODO: placer au bons endroits
-	//authHandler.HandleEmptyPacket()
+	isConnected := authHandler.handleAuthenticationResult()
 
-	authHandler.selectServer()
+	if isConnected == true {
 
-	authHandler.connectToGameServer()
+		authHandler.handleUsername() //Ad + username
 
-	// for {
-	// 	select {
-	// 	case message, ok := <-authHandler.DofusSocket.Channel:
-	// 		if ok == false || message == "" {
-	// 			fmt.Println("Server closed connection, stopping...")
-	// 			return
-	// 		}
-	// 		//	fmt.Println("[AUTHPHASE] [RCV] - " + message)
-	// 		switch {
+		authHandler.handleEmptyPacket() //Ac2
 
-	// 		case strings.HasPrefix(message, authHandler.startingPackedID):
-	// 			authHandler.SendAuthentication(message)
-	// 			//message, ok := <-authHandler.DofusSocket.Channel
-	// 			//Ici on s'attends a recevoir un paquet particulier
-	// 			// On peut aussi deleguer le travail a un sous-handler si necessaire
+		authHandler.handleServerList() //AH + servers
 
-	// 		case strings.HasPrefix(message, authHandler.endingPacketID):
-	// 			authHandler.ConnectToGameServer(message)
-	// 		case strings.HasPrefix(message, "Af"):
-	// 			if decoders.HandleQueue(message).IsSub == false {
-	// 				fmt.Println("[AUTHPHASE] [ERR] - Un compte non abonné ne peux pas jouer sur Dofus retro")
-	// 				return
-	// 			}
-	// 		case strings.HasPrefix(message, "Ad"):
-	// 			fmt.Println("Connecté a " + strings.TrimPrefix(message, "Ad"))
-	// 		case strings.HasPrefix(message, "Ac"):
-	// 			//Empty packet
-	// 		case strings.HasPrefix(message, "AlK0"):
-	// 			//Empty packet
-	// 		case strings.HasPrefix(message, "AQ"):
-	// 			//Empty packet
-	// 		case strings.HasPrefix(message, "AH"):
-	// 			authHandler.HandleServerList(message)
-	// 		case strings.HasPrefix(message, "AxK"):
-	// 			decoders.SelectServer(message, authHandler.DofusSocket, authHandler.cfg.DofusServerName)
-	// 		default:
-	// 			fmt.Println("[AUTHPHASE] [RCV] - " + message)
-	// 			fmt.Println("[AUTHPHASE] [ERR] - Cant handle packet")
-	// 			break
-	// 		}
-	// 	}
-	// }
+		authHandler.handleEmptyPacket() //AlK
+
+		authHandler.handleEmptyPacket() //AQ
+
+		authHandler.selectServer()
+
+		authHandler.connectToGameServer()
+	}
+
 }
