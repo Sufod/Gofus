@@ -4,10 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"time"
 
 	"github.com/Sufod/Gofus/configs"
-	"github.com/Sufod/Gofus/internal/client/phases"
+	auth_phase "github.com/Sufod/Gofus/internal/client/handlers/auth_phase"
 	"github.com/Sufod/Gofus/internal/network"
 )
 
@@ -38,34 +37,14 @@ func (client *dofusClient) Start() error {
 	fmt.Println("Connected, starting logging packets")
 	fmt.Println("=======================================")
 
-	client.listenAndForward() //Starting proxy blocking loop
+	client.handle() //Starting main loop
 	fmt.Println("stopped client")
 	return nil
 }
 
-//PhaseName is an enum of the differents phases
-type PhaseName int
-
-const (
-	//AUTH is the authphase
-	AUTH PhaseName = iota
-	//ANOTHER is an exemple phase
-	ANOTHER
-)
-
-//Blocks forever and forward + print received messages from client to server and vice-versa
-//Gracefully close if client disconnect
-func (client *dofusClient) listenAndForward() {
-
-	phasesHandlers := make(map[PhaseName]phases.PhaseInterface)
-	phasesHandlers[AUTH] = phases.NewAuthPhase(client.serverSocket, client.cfg)
-	//currentPhase := AUTH
-	for {
-		phasesHandlers[AUTH].HandlePackets() // Appel bloquant
-
-		// Executé a la fin de [Auth] HandlePackets
-		fmt.Println("Ending auth phase")
-		time.Sleep(100)
-		break
-	}
+//handle is the main method for client, is in charge of the orchestration of the different handlers
+//This method shouldn't stop until the end of the program
+func (client *dofusClient) handle() {
+	auth_phase.NewAuthHandler(client.serverSocket, client.cfg).Handle()
+	fmt.Println("Ending auth phase")
 }
