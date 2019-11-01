@@ -1,6 +1,6 @@
 # Gofus
 
-Gofus is a Dofus 1.29 full socket Bot written in Golang.
+Gofus is a Dofus 1.30.0e full socket Bot written in Golang.
 
 The repository also contains a MITM proxy used to simplify the bot development process.
 
@@ -33,9 +33,11 @@ Pull requests are welcome. For major changes, please open an issue first to disc
 Please make sure to update tests as appropriate.
 ### Community tools
 
-Join us on [Slack](https://join.slack.com/t/gofus/shared_invite/enQtNzc1ODk2NDYzMjgzLTU0NzM2Mzk1YTBlZjhiNGE3YTQyMjc1NmYyYzY4ODVmMzVjZTI0MTk5Mzk5ZGIxNDQwNGE3ZDM2ZWFiM2I0NmY) !
+Join us on [Slack](https://join.slack.com/t/gofus/shared_invite/enQtNzc1ODk2NDYzMjgzLTU0NzM2Mzk1YTBlZjhiNGE3YTQyMjc1NmYyYzY4ODVmMzVjZTI0MTk5Mzk5ZGIxNDQwNGE3ZDM2ZWFiM2I0NmY) or [Discord](https://discord.gg/xgNfzVJ) !
 
 Check our [Trello](https://trello.com/b/VZBgmYfO/gofus) !
+
+Check the [Gofus Proposal](https://docs.google.com/document/d/1KUc18DVd6pT7niy608H0nvGO8Rt7bsbxklc0YHvisH0/edit?usp=sharing) specification document (wip)
 
 ### Using the proxy
 Modify the file config.xml in your Dofus installation folder as following:
