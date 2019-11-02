@@ -11,18 +11,20 @@ import (
 
 //authHandler is the phase where the user logins and choose its game server / character
 type authHandler struct {
-	*network.HandlerSocket
+	*network.AuthHandlerSocket
 	cfg configs.ConfigHolder
 	serverHandler
+	GameServerIp string
+	Ticket       string
 }
 
 //NewAuthHandler Instantiate and initialize a new authHandler
 func NewAuthHandler(socket *network.DofusSocket, cfg configs.ConfigHolder) authHandler {
 	authHandler := authHandler{
-		HandlerSocket: network.NewHandlerSocket(socket),
-		cfg:           cfg,
+		AuthHandlerSocket: network.NewAuthHandlerSocket(socket),
+		cfg:               cfg,
 	}
-	authHandler.serverHandler = newServerHandler(authHandler.HandlerSocket, cfg.DofusServerName)
+	authHandler.serverHandler = newServerHandler(authHandler.GetHandlerSocket(), cfg.DofusServerName)
 
 	return authHandler
 }
@@ -76,21 +78,22 @@ func (authHandler authHandler) connectToGameServer() {
 		//TODO better error handling
 		fmt.Println(err)
 	}
-	fmt.Println(packet)
-	//TODO Check for XXX packet
-}
-
-//ConnectToGameServer disconnects from the authserver to finally connect to the gameServer and init GamePhase
-func (authHandler authHandler) handleEmptyPacket() {
-	packet, err := authHandler.WaitForPacket()
+	packet = packet[3 : len(packet)-2] //Removing "AXK" and "\n\x00"
+	ticket := packet[11:]
+	ip := crypto.NewDofusCypher().DecodeIp(packet[:11])
+	fmt.Print("\nEstablishing connexion with game server " + authHandler.selectedServerName + " (" + ip + ")...")
+	err = authHandler.CloseSocketAndConnectTo(ip)
 	if err != nil {
 		//TODO better error handling
 		fmt.Println(err)
 	}
-	if len(packet) > 0 {
-		return
+	packet, err = authHandler.WaitForPacket() // Expecting HG
+	if err != nil {
+		//TODO better error handling
+		fmt.Println(err)
 	}
-	//TODO Check for XXX packet
+	fmt.Println("OK")
+	authHandler.Send("AT" + ticket)
 }
 
 //HandleQueue directly handles the af packet
@@ -110,7 +113,7 @@ func (authHandler authHandler) handleQueue() *Queue {
 
 //Handle handles packets for the auth phase
 func (authHandler authHandler) Handle() {
-	fmt.Println("========= ENTERING AUTH PHASE =========")
+	fmt.Println("========= ENTERING AUTH PHASE =========\n")
 	authHandler.handleAuthentication() //HC + key
 
 	authHandler.handleQueue() // Af + pos | total | useless data
@@ -119,17 +122,18 @@ func (authHandler authHandler) Handle() {
 
 	if isConnected == true {
 
-		authHandler.handleEmptyPacket() //Ac2
+		authHandler.HandleEmptyPacket() //Ac2
 
 		authHandler.handleServerList() //AH + servers
 
-		authHandler.handleEmptyPacket() //AlK
+		authHandler.HandleEmptyPacket() //AlK
 
-		authHandler.handleEmptyPacket() //AQ
+		authHandler.HandleEmptyPacket() //AQ
 
 		if authHandler.selectServer() == true { // If has characters on the selected server
 			authHandler.connectToGameServer()
 		}
+		fmt.Println("\n========= ENDING AUTH PHASE =========")
 		return
 	}
 

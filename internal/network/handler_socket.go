@@ -1,5 +1,7 @@
 package network
 
+import "fmt"
+
 type HandlerSocket struct {
 	dofusSocket *DofusSocket
 }
@@ -23,4 +25,16 @@ func (socket HandlerSocket) WaitForPacket() (string, error) {
 		return "", err
 	}
 	return message, nil
+}
+
+//HandleEmptyPacket reads the next packet and ignore it
+func (socket HandlerSocket) HandleEmptyPacket() {
+	packet, err := socket.WaitForPacket()
+	if err != nil {
+		//TODO better error handling
+		fmt.Println(err)
+	}
+	if len(packet) > 0 {
+		return
+	}
 }

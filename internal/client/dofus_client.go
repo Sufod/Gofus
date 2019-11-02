@@ -7,6 +7,7 @@ import (
 
 	"github.com/Sufod/Gofus/configs"
 	auth_phase "github.com/Sufod/Gofus/internal/client/handlers/auth_phase"
+	game_phase "github.com/Sufod/Gofus/internal/client/handlers/game_phase"
 	"github.com/Sufod/Gofus/internal/network"
 )
 
@@ -25,7 +26,7 @@ func NewDofusClient(cfg configs.ConfigHolder) *dofusClient {
 
 //Start is a function to init connection to the authServer with a DofusCLient
 func (client *dofusClient) Start() error {
-	fmt.Println("Establishing connexion with server")
+	fmt.Print("Establishing connexion with auth server...")
 	serverConn, err := net.Dial("tcp", client.cfg.DofusAuthServer) // Connecting to auth servers
 	if err != nil {
 		log.Panic(err)
@@ -34,11 +35,10 @@ func (client *dofusClient) Start() error {
 	defer client.serverSocket.Close()                        //Delaying server socket conn graceful close
 	go client.serverSocket.Listen()                          //Starting server listen loop in a goroutine
 
-	fmt.Println("Connected, starting logging packets")
-	fmt.Println("=======================================")
+	fmt.Println("OK")
 
 	client.handle() //Starting main loop
-	fmt.Println("stopped client")
+
 	return nil
 }
 
@@ -46,5 +46,6 @@ func (client *dofusClient) Start() error {
 //This method shouldn't stop until the end of the program
 func (client *dofusClient) handle() {
 	auth_phase.NewAuthHandler(client.serverSocket, client.cfg).Handle()
-	fmt.Println("Ending auth phase")
+	fmt.Println("=======================================")
+	game_phase.NewGameHandler(client.serverSocket).Handle()
 }
