@@ -35,9 +35,9 @@ Please make sure to update tests as appropriate.
 
 Join us on [Slack](https://join.slack.com/t/gofus/shared_invite/enQtNzc1ODk2NDYzMjgzLTU0NzM2Mzk1YTBlZjhiNGE3YTQyMjc1NmYyYzY4ODVmMzVjZTI0MTk5Mzk5ZGIxNDQwNGE3ZDM2ZWFiM2I0NmY) or [Discord](https://discord.gg/xgNfzVJ) !
 
-Check our [Trello](https://trello.com/b/VZBgmYfO/gofus) !
+Check our [Trello](https://trello.com/b/VZBgmYfO/gofus) ! [Team Invitation Link](https://trello.com/invite/b/VZBgmYfO/9de3394da289a6e6d72063e44314e4dd/gofus)
 
-Check the [Gofus Proposal](https://docs.google.com/document/d/1KUc18DVd6pT7niy608H0nvGO8Rt7bsbxklc0YHvisH0/edit?usp=sharing) specification document (wip)
+Check the [Gofus Proposal](https://docs.google.com/document/d/1KUc18DVd6pT7niy608H0nvGO8Rt7bsbxklc0YHvisH0/edit?usp=sharing) specification document (wip) to learn more about the project.
 
 ### Using the proxy
 Modify the file config.xml in your Dofus installation folder as following:
