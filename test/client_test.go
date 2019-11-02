@@ -9,9 +9,3 @@ func TestClient(t *testing.T) {
 	go emulator.startClient()
 	emulator.Start(t)
 }
-
-func TestWithDebug(t *testing.T) {
-	emulator := DofusServerEmulator{}
-	go emulator.Start(t)
-	emulator.startClient()
-}
