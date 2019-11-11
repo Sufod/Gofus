@@ -1,5 +1,7 @@
 # Gofus
 
+/!\ PROJECT HAS BEEN MOVED TO GITLAB => https://gitlab.com/gofus /!\
+
 Gofus is a Dofus 1.30.0e full socket Bot written in Golang.
 
 The repository also contains a MITM proxy used to simplify the bot development process.
